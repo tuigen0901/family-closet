@@ -9,6 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: フォルダの中身を確認（調査用）
+        run: ls -la
+      
       - name: APIキーを埋め込む
         run: |
           sed -i 's/__FIREBASE_API_KEY__/${{ secrets.FIREBASE_API_KEY }}/g' index.html
