@@ -1,0 +1,24 @@
+name: Deploy to Firebase Hosting
+'on':
+  push:
+    branches:
+      - main
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: APIキーを埋め込む
+        run: |
+          sed -i 's/__FIREBASE_API_KEY__/${{ secrets.FIREBASE_API_KEY }}/g' index.html
+          sed -i 's/__FIREBASE_APP_ID__/${{ secrets.FIREBASE_APP_ID }}/g' index.html
+          sed -i 's/__WEATHER_API_KEY__/${{ secrets.WEATHER_API_KEY }}/g' index.html
+          sed -i 's/__GEMINI_API_KEY__/${{ secrets.GEMINI_API_KEY }}/g' index.html
+          
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_FAMILY_CLOSET_3D8A4 }}'
+          channelId: live
+          projectId: family-closet-3d8a4
