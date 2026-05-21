@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Closet AI</title>
+    <style>
+        body { 
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif; 
+            background-color: #FFFFFF; 
+            color: #333333; 
+            padding: 20px 15px; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center;
+            -webkit-font-smoothing: antialiased;
+        }
+        .app-container { width: 100%; max-width: 440px; }
+        
+        h1, h2 { text-align: center; color: #333; font-weight: 600; margin-bottom: 25px; letter-spacing: 0.05em; }
+        h1 { font-size: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 15px; }
+        h2 { font-size: 16px; margin-top: 40px; }
+
+        .card { background-color: #FFFFFF; padding: 0; margin-bottom: 35px; }
+
+        .user-header {
+            background-color: #F9FDFB; border: 1px solid #E0F2EF; padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px;
+        }
+        .user-header select {
+            width: auto; margin-bottom: 0; padding: 8px 15px; border-color: #79D1C3; color: #4A7C74; font-weight: bold; background-color: #fff; cursor: pointer; border-radius: 4px;
+        }
+        .settings-btn {
+            background: #f0f0f0; color: #333; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-bottom: 0; width: auto;
+        }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; }
+        .modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .user-list-item { display: flex; flex-direction: column; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .user-list-info { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .user-list-info span { font-weight: bold; color: #4A7C74; }
+        .user-list-item button { width: auto; padding: 6px 12px; margin: 5px 0 0 5px; font-size: 11px; }
+
+        input[type="text"], input[type="number"], select { 
+            width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #E5E5E5; border-radius: 4px; box-sizing: border-box; font-size: 14px; background-color: #FBFBFB;
+        }
+        button { 
+            width: 100%; padding: 15px; margin-bottom: 15px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px; transition: opacity 0.2s;
+        }
+        .primary-btn { background-color: #79D1C3; color: white; }
+        .secondary-btn { background-color: #333333; color: white; }
+        .location-btn { background-color: #f0f0f0; color: #666; font-weight: normal; }
+        .favorite-btn { background-color: #ff6b81; color: white; margin-top: 15px; } 
+        .ai-fill-btn { background: linear-gradient(135deg, #79D1C3, #4A7C74); color: white; margin-top: 8px; display: none; } /* 自動入力ボタン用 */
+        button:active { opacity: 0.7; }
+
+        .weather-search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .weather-search-row input, .weather-search-row button { margin-bottom: 0; }
+        .weather-search-row button { width: 80px; padding: 0; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .checkbox-label { background: #F5F5F5; padding: 8px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1px solid transparent; }
+        .checkbox-label input { display: none; }
+        .checkbox-label:has(input:checked) { background: #FFFFFF; border: 1px solid #79D1C3; color: #79D1C3; }
+
+        .result-grid { display: grid; gap: 15px; grid-template-columns: 1fr 1fr; margin-top: 10px; }
+        .clothing-item { display: flex; flex-direction: column; background-color: #FFFFFF; overflow: hidden; }
+        .item-image { width: 100%; height: 180px; object-fit: contain; background-color: #F9F9F9; border-radius: 4px; margin-bottom: 8px; }
+        .item-info { font-size: 12px; line-height: 1.4; color: #333; }
+        .item-price { color: #79D1C3; font-weight: bold; font-size: 13px; margin-top: 3px; }
+        .reason-box { background-color: #F9FDFB; padding: 18px; border-radius: 8px; margin-bottom: 25px; font-size: 13px; line-height: 1.6; border: 1px solid #E0F2EF; color: #4A7C74; }
+        .shopping-box { border-top: 1px solid #F0F0F0; padding-top: 25px; margin-top: 20px; }
+        .shopping-title { font-weight: bold; font-size: 14px; margin-bottom: 12px; color: #333; }
+        #weather-status { font-size: 13px; color: #999; text-align: center; margin-bottom: 20px; font-weight: bold;}
+        .edit-btn { background-color: #333; color: white; font-size: 11px; width: 48%; margin-right: 2%; padding: 8px; border:none; border-radius:4px;}
+        .delete-btn { background-color: #E5E5E5; color: #666; font-size: 11px; width: 48%; padding: 8px; border:none; border-radius:4px;}
+        
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 999; justify-content: center; align-items: center; flex-direction: column; font-size: 14px; font-weight: bold; text-align: center; line-height: 1.5; }
+        
+        .outfit-row { border: 1px solid #E5E5E5; border-radius: 8px; padding: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .outfit-images { display: flex; gap: 5px; margin-top: 8px; overflow-x: auto; }
+        .outfit-img-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #f9f9f9; border: 1px solid #eee; flex-shrink: 0;}
+    </style>
+</head>
+<body>
+
+<div id="loading" class="loading-overlay">
+    <div id="loading-text">AI Stylist is thinking...✨</div>
+</div>
+
+<div id="user-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2 style="margin-top:0; font-size:18px;">ユーザー管理</h2>
+        <div id="user-list-ui" style="margin-bottom: 20px;"></div>
+        
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="new-user-input" placeholder="新しいユーザー名">
+            <select id="new-user-gender">
+                <option value="male">男性</option>
+                <option value="female">女性</option>
+            </select>
+            <button class="primary-btn" onclick="addUser()">追加</button>
+        </div>
+        <button class="location-btn" onclick="closeUserModal()">閉じる</button>
+    </div>
+</div>
+
+<div class="app-container">
+    
+    <div class="user-header">
+        <span style="font-size: 14px; color: #4A7C74; font-weight: bold;">👤 ユーザー切替</span>
+        <div style="display:flex; gap:8px;">
+            <select id="current-user" onchange="loadData()"></select>
+            <button class="settings-btn" onclick="openUserModal()">⚙️</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h1>Gemini AI Stylist</h1>
+        <p style="font-size: 12px; color: #999; margin-bottom: 8px;">お出かけ先の天気を検索</p>
+        <div class="weather-search-row">
+            <input type="text" id="target-city" placeholder="都市名 (例: 東京, 札幌)">
+            <button class="secondary-btn" onclick="getWeatherByCity()">検索</button>
+        </div>
+        <button class="location-btn" onclick="getWeatherByLocation()">📍 現在地から取得</button>
+        
+        <div id="weather-status">天気を取得してください</div>
+        <input type="hidden" id="temperature" value="20">
+        
+        <p style="font-size: 13px; color: #999; margin-bottom: 10px;">今日の目的</p>
+        <div class="checkbox-group" id="suggest-purposes">
+            <label class="checkbox-label"><input type="checkbox" value="仕事">仕事</label>
+            <label class="checkbox-label"><input type="checkbox" value="遊び">遊び</label>
+            <label class="checkbox-label"><input type="checkbox" value="デート">デート</label>
+            <label class="checkbox-label"><input type="checkbox" value="アウトドア">アウトドア</label>
+            <label class="checkbox-label"><input type="checkbox" value="近所への買い物">近所の買い物</label>
+            <label class="checkbox-label"><input type="checkbox" value="スポーツ">スポーツ</label>
+        </div>
+        
+        <button id="suggest-btn" class="primary-btn" disabled>読み込み中...</button>
+    </div>
+
+    <div id="reason-box" class="reason-box" style="display:none;"></div>
+    <div id="result-container" class="result-grid"></div>
+    <button id="save-outfit-btn" class="favorite-btn" style="display:none;" onclick="saveFavoriteOutfit()">♥ このコーデをお気に入りに保存</button>
+
+    <div id="shopping-box" class="shopping-box" style="display:none;">
+        <div class="shopping-title">AIからの追加アイテム提案</div>
+        <p id="shopping-message" style="font-size: 12px; margin-bottom: 15px; color: #666;"></p>
+        <div id="shopping-results" class="result-grid"></div>
+    </div>
+
+    <div class="card" id="form-card" style="margin-top: 60px;">
+        <h2 id="form-title">服を新しく登録する</h2>
+        <input type="hidden" id="edit-id">
+        
+        <div id="photo-input-area" style="margin-bottom: 15px;">
+            <label id="photo-label" style="font-size: 12px; color: #999;">写真を追加:</label>
+            <input type="file" id="new-photo" accept="image/jpeg, image/png, image/gif, image/webp" onchange="toggleAiBtn()">
+            <button id="ai-fill-btn" class="ai-fill-btn" onclick="autoFillWithAI()">✨ AIで情報を自動入力</button>
+        </div>
+
+        <input type="text" id="new-name" placeholder="服の名前 (例: 白のロングＴシャツ)">
+        
+        <select id="new-category">
+            <option value="top">トップス</option>
+            <option value="bottom">ボトムス</option>
+            <option value="outer">アウター</option>
+        </select>
+        
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="new-minTemp" placeholder="最低℃">
+            <input type="number" id="new-maxTemp" placeholder="最高℃">
+        </div>
+
+        <p style="font-size: 12px; color: #999; margin: 10px 0;">おすすめの用途:</p>
+        <div class="checkbox-group" id="new-purposes">
+            <label class="checkbox-label"><input type="checkbox" value="仕事">仕事</label>
+            <label class="checkbox-label"><input type="checkbox" value="遊び">遊び</label>
+            <label class="checkbox-label"><input type="checkbox" value="デート">デート</label>
+            <label class="checkbox-label"><input type="checkbox" value="アウトドア">アウトドア</label>
+            <label class="checkbox-label"><input type="checkbox" value="近所への買い物">近所の買い物</label>
+            <label class="checkbox-label"><input type="checkbox" value="スポーツ">スポーツ</label>
+        </div>
+
+        <button id="submit-btn" class="primary-btn" onclick="handleSubmit()">保存する</button>
+        <button id="cancel-btn" class="secondary-btn" onclick="resetForm()" style="display:none;">キャンセル</button>
+    </div>
+
+    <div class="card">
+        <h2>♥ お気に入りコーデ</h2>
+        <div id="favorites-container">
+            <p style="font-size: 12px; color: #999; text-align: center;">保存されたコーデはありません</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>クローゼット管理</h2>
+        <input type="text" id="search-input" placeholder="服を検索..." onkeyup="searchClothes()">
+        <div id="inventory-container" class="result-grid"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+    // ==========================================
+    // ★ 各種 API キーの設定（GitHub連携用プレースホルダー）
+    // ==========================================
+    const firebaseConfig = {
+        apiKey: "__FIREBASE_API_KEY__",
+        authDomain: "family-closet-3d8a4.firebaseapp.com",
+        projectId: "family-closet-3d8a4",
+        storageBucket: "family-closet-3d8a4.firebasestorage.app",
+        messagingSenderId: "727484882566",
+        appId: "__FIREBASE_APP_ID__"
+    };
+    const WEATHER_API_KEY = "__WEATHER_API_KEY__";
+    const GEMINI_API_KEY = "__GEMINI_API_KEY__";
+    // ※楽天APIのキーは公開されても問題ない仕様（アプリID）なのでそのままか、同様に隠してもOKです
+    const RAKUTEN_APP_ID = "97099539-35ab-4244-b3b7-e9ba8c90914f";
+    const RAKUTEN_ACCESS_KEY = "pk_uclZ4HV21cirm34XSfRyVTLUv77oIsjC7bHblB9vbp6";
+    // ==========================================
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+    
+    let myClothes = []; 
+    let userList = [];
+    let currentSuggestedIds = [];
+
+    async function compressImage(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800;
+                let width = img.width;
+                let height = img.height;
+                if (width > MAX_WIDTH) {
+                    height = Math.round((height * MAX_WIDTH) / width);
+                    width = MAX_WIDTH;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(blob => {
+                    if (blob) resolve(blob);
+                    else reject(new Error("圧縮失敗"));
+                }, 'image/jpeg', 0.8);
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error("画像エラー"));
+            };
+            img.src = objectUrl;
+        });
+    }
+
+    // BlobをBase64に変換するヘルパー関数 (Gemini API 送信用)
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64data = reader.result.split(',')[1];
+                resolve(base64data);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    async function initUsers() {
+        try {
+            const docRef = doc(db, "system", "users");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                userList = docSnap.data().list;
+                if(Array.isArray(userList) && typeof userList[0] === 'string'){
+                    userList = userList.map(name => ({name: name, gender: 'male'}));
+                }
+            } else {
+                userList = [{name: "自分", gender: "male"}];
+                await setDoc(docRef, { list: userList });
+            }
+        } catch (e) {
+            userList = [{name: "自分", gender: "male"}];
+        }
+        renderUserDropdown();
+        await loadData();
+    }
+
+    function renderUserDropdown() {
+        const select = document.getElementById('current-user');
+        select.innerHTML = '';
+        userList.forEach(u => {
+            select.insertAdjacentHTML('beforeend', `<option value="${u.name}">${u.name}</option>`);
+        });
+    }
+
+    window.openUserModal = function() { document.getElementById('user-modal').style.display = 'flex'; renderUserModalList(); }
+    window.closeUserModal = function() { document.getElementById('user-modal').style.display = 'none'; }
+
+    function renderUserModalList() {
+        const listUi = document.getElementById('user-list-ui');
+        listUi.innerHTML = '';
+        userList.forEach(u => {
+            listUi.insertAdjacentHTML('beforeend', `
+                <div class="user-list-item">
+                    <div class="user-list-info">
+                        <span>${u.name} (${u.gender === 'male' ? '男性' : '女性'})</span>
+                        <div>
+                            <button class="secondary-btn" onclick="editUser('${u.name}')">変更</button>
+                            <button class="delete-btn" onclick="deleteUser('${u.name}')" style="color:white; background:#ff3b30;">削除</button>
+                        </div>
+                    </div>
+                </div>
+            `);
+        });
+    }
+
+    window.addUser = async function() {
+        const name = document.getElementById('new-user-input').value.trim();
+        const gender = document.getElementById('new-user-gender').value;
+        if (!name) return;
+        if (userList.some(u => u.name === name)) return alert("同名ユーザーあり");
+        showLoading(true, "追加中...");
+        try {
+            userList.push({name, gender});
+            await setDoc(doc(db, "system", "users"), { list: userList });
+            document.getElementById('new-user-input').value = "";
+            renderUserDropdown();
+            document.getElementById('current-user').value = name;
+            renderUserModalList();
+            await loadData();
+        } catch (e) { alert(e.message); } 
+        finally { showLoading(false); }
+    }
+
+    window.editUser = async function(oldName) {
+        const newName = prompt(`${oldName} さんの新しい名前:`, oldName);
+        if (!newName || newName === oldName) return;
+        const newGender = confirm(`${newName} さんは男性ですか？（キャンセルで女性）`) ? 'male' : 'female';
+        showLoading(true, "更新中...");
+        try {
+            userList = userList.map(u => u.name === oldName ? {name: newName, gender: newGender} : u);
+            await setDoc(doc(db, "system", "users"), { list: userList });
+            const snapshot = await getDocs(collection(db, "clothes"));
+            const updatePromises = [];
+            snapshot.docs.forEach(docSnap => {
+                const data = docSnap.data();
+                if ((data.owner || "自分") === oldName) {
+                    updatePromises.push(updateDoc(doc(db, "clothes", docSnap.id), { owner: newName }));
+                }
+            });
+            await Promise.all(updatePromises);
+            renderUserDropdown();
+            document.getElementById('current-user').value = newName;
+            renderUserModalList();
+            await loadData();
+        } catch (e) { alert(e.message); } 
+        finally { showLoading(false); }
+    }
+
+    window.deleteUser = async function(name) {
+        if(userList.length === 1) return;
+        if (!confirm(`${name} さんを削除？`)) return;
+        showLoading(true, "削除中...");
+        try {
+            userList = userList.filter(u => u.name !== name);
+            await setDoc(doc(db, "system", "users"), { list: userList });
+            const snapshot = await getDocs(collection(db, "clothes"));
+            const deletePromises = snapshot.docs.map(docSnap => {
+                if ((docSnap.data().owner || "自分") === name) return deleteDoc(doc(db, "clothes", docSnap.id));
+            });
+            await Promise.all(deletePromises);
+            renderUserDropdown();
+            renderUserModalList();
+            await loadData();
+        } catch (e) { alert(e.message); } 
+        finally { showLoading(false); }
+    }
+
+    window.loadData = async function() {
+        try {
+            const currentUser = document.getElementById('current-user').value || "自分";
+            
+            const querySnapshot = await getDocs(collection(db, "clothes"));
+            const allClothes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            myClothes = allClothes.filter(c => (c.owner || "自分") === currentUser);
+            document.getElementById('suggest-btn').textContent = "AIにコーディネートを頼む";
+            document.getElementById('suggest-btn').disabled = false;
+            document.getElementById('search-input').value = "";
+            renderInventory(myClothes);
+            
+            const outfitsSnapshot = await getDocs(collection(db, "outfits"));
+            const allOutfits = outfitsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const myOutfits = allOutfits.filter(o => o.owner === currentUser);
+            renderOutfits(myOutfits);
+            
+            document.getElementById('result-container').innerHTML = "";
+            document.getElementById('reason-box').style.display = "none";
+            document.getElementById('shopping-box').style.display = "none";
+            document.getElementById('save-outfit-btn').style.display = "none";
+        } catch (e) { console.error(e); }
+    }
+
+    window.searchClothes = function() {
+        const term = document.getElementById('search-input').value.toLowerCase();
+        const filtered = myClothes.filter(c => c.name.toLowerCase().includes(term));
+        renderInventory(filtered);
+    }
+
+    function getCheckedValues(id) {
+        return Array.from(document.querySelectorAll(`#${id} input:checked`)).map(cb => cb.value);
+    }
+    function setCheckedValues(id, vals) {
+        document.querySelectorAll(`#${id} input`).forEach(cb => { cb.checked = (vals && vals.includes(cb.value)); });
+    }
+
+    // ★追加：写真が選ばれたらAI入力ボタンを表示する
+    window.toggleAiBtn = function() {
+        const file = document.getElementById('new-photo').files[0];
+        document.getElementById('ai-fill-btn').style.display = file ? "block" : "none";
+    };
+
+    // ★追加：共有いただいたAI機能を「自動入力」として組み込み！
+    window.autoFillWithAI = async function() {
+        const file = document.getElementById('new-photo').files[0];
+        if(!file) return alert("先に写真を選択してください。");
+
+        showLoading(true, "AIが服の情報を分析中...✨");
+        try {
+            // Android等でのメモリ不足を防ぐため、一度圧縮してからGeminiに送信する
+            const compressedBlob = await compressImage(file);
+            const base64Data = await blobToBase64(compressedBlob);
+
+            const prompt = `あなたはプロのスタイリストです。この写真の服を分析し、以下のJSON形式のみを出力してください。
+            {
+                "name": "服のわかりやすい名前（例：黒のレザージャケット、白のロゴ入りTシャツなど）",
+                "category": "top, bottom, outerのいずれか",
+                "minTemp": 着用に適した最低気温の数値（例：10）,
+                "maxTemp": 着用に適した最高気温の数値（例：25）,
+                "purposes": ["仕事", "遊び", "デート", "アウトドア", "近所への買い物", "スポーツ"] の中からこの服に適した用途を複数選択した配列
+            }`;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [
+                        { inline_data: { mime_type: "image/jpeg", data: base64Data } },
+                        { text: prompt }
+                    ]}]
+                })
+            });
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+
+            const aiText = data.candidates[0].content.parts[0].text;
+            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if(!jsonMatch) throw new Error("JSONの解析に失敗しました。");
+            
+            const result = JSON.parse(jsonMatch[0]);
+
+            // 分析結果をフォームに自動入力
+            document.getElementById('new-name').value = result.name || "";
+            if (result.category) document.getElementById('new-category').value = result.category;
+            document.getElementById('new-minTemp').value = result.minTemp || 0;
+            document.getElementById('new-maxTemp').value = result.maxTemp || 30;
+            setCheckedValues('new-purposes', result.purposes || []);
+
+            alert("AIが情報を自動入力しました！内容を確認して「保存する」を押してください。");
+        } catch (e) {
+            alert("自動入力に失敗しました: " + e.message);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    window.handleSubmit = async function() {
+        const id = document.getElementById('edit-id').value;
+        const name = document.getElementById('new-name').value;
+        const category = document.getElementById('new-category').value;
+        const minTempStr = document.getElementById('new-minTemp').value;
+        const maxTempStr = document.getElementById('new-maxTemp').value;
+        const purposes = getCheckedValues('new-purposes');
+        const currentUser = document.getElementById('current-user').value || "自分";
+
+        if (!name || minTempStr === "" || maxTempStr === "" || purposes.length === 0) {
+            return alert("名前、最低気温、最高気温、用途をすべて入力してください");
+        }
+
+        const minTemp = parseInt(minTempStr);
+        const maxTemp = parseInt(maxTempStr);
+        const file = document.getElementById('new-photo').files[0];
+
+        showLoading(true, "保存中...");
+        
+        try {
+            if (id) {
+                if (file) {
+                    showLoading(true, "新しい写真を圧縮して保存中...");
+                    const compressed = await compressImage(file);
+                    const storageRef = ref(storage, 'clothes/' + Date.now() + ".jpg");
+                    await uploadBytes(storageRef, compressed);
+                    const photoURL = await getDownloadURL(storageRef);
+                    await updateDoc(doc(db, "clothes", id), { name, category, minTemp, maxTemp, purpose: purposes, owner: currentUser, image: photoURL });
+                } else {
+                    await updateDoc(doc(db, "clothes", id), { name, category, minTemp, maxTemp, purpose: purposes, owner: currentUser });
+                }
+                alert("服の情報を更新しました");
+            } else {
+                if(!file) throw new Error("新規登録時は写真が必要です");
+                const compressed = await compressImage(file);
+                const storageRef = ref(storage, 'clothes/' + Date.now() + ".jpg");
+                await uploadBytes(storageRef, compressed);
+                const photoURL = await getDownloadURL(storageRef);
+                await addDoc(collection(db, "clothes"), { name, image: photoURL, category, minTemp, maxTemp, purpose: purposes, owner: currentUser });
+                alert("登録しました");
+            }
+            resetForm();
+            await loadData(); 
+        } catch (e) { alert(e.message); } 
+        finally { showLoading(false); }
+    };
+
+    window.startEdit = function(id) {
+        const item = myClothes.find(c => c.id === id);
+        document.getElementById('edit-id').value = id;
+        document.getElementById('new-name').value = item.name;
+        document.getElementById('new-category').value = item.category;
+        document.getElementById('new-minTemp').value = item.minTemp;
+        document.getElementById('new-maxTemp').value = item.maxTemp;
+        setCheckedValues('new-purposes', item.purpose);
+        
+        document.getElementById('form-title').textContent = "服の情報を修正する";
+        document.getElementById('submit-btn').textContent = "修正を保存";
+        document.getElementById('photo-label').textContent = "写真を変更する (変更しない場合はそのままでOK):";
+        document.getElementById('new-photo').value = "";
+        document.getElementById('ai-fill-btn').style.display = "none";
+        document.getElementById('photo-input-area').style.display = "block";
+        document.getElementById('cancel-btn').style.display = "block";
+        document.getElementById('form-card').scrollIntoView({behavior: "smooth"});
+    };
+
+    window.resetForm = function() {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('new-name').value = "";
+        document.getElementById('new-photo').value = "";
+        setCheckedValues('new-purposes', []);
+        document.getElementById('form-title').textContent = "服を新しく登録する";
+        document.getElementById('submit-btn').textContent = "保存する";
+        document.getElementById('photo-label').textContent = "写真を追加:";
+        document.getElementById('ai-fill-btn').style.display = "none";
+        document.getElementById('photo-input-area').style.display = "block";
+        document.getElementById('cancel-btn').style.display = "none";
+    };
+
+    window.getWeatherByCity = async function() {
+        const city = document.getElementById('target-city').value;
+        if(!city) return;
+        document.getElementById('weather-status').innerHTML = `検索中...`;
+        try {
+            const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${WEATHER_API_KEY}&units=metric&lang=ja`);
+            const data = await res.json();
+            document.getElementById('temperature').value = Math.round(data.main.temp);
+            document.getElementById('weather-status').innerHTML = `📍 ${data.name} : ${Math.round(data.main.temp)}℃`;
+        } catch(e) { document.getElementById('weather-status').innerHTML = `エラー`; }
+    };
+
+    window.getWeatherByLocation = function() {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&appid=${WEATHER_API_KEY}&units=metric&lang=ja`);
+            const data = await res.json();
+            document.getElementById('temperature').value = Math.round(data.main.temp);
+            document.getElementById('weather-status').innerHTML = `📍 ${data.name} : ${Math.round(data.main.temp)}℃`;
+        });
+    };
+
+    window.suggestOutfit = async function() {
+        const temp = document.getElementById("temperature").value;
+        const purposes = getCheckedValues('suggest-purposes');
+        const currentUser = document.getElementById('current-user').value;
+        const userObj = userList.find(u => u.name === currentUser);
+
+        if (purposes.length === 0 || myClothes.length === 0) return alert("目的を選ぶか、服を登録してください。");
+        showLoading(true, "AI考案中...✨");
+        
+        const prompt = `スタイリストです。気温:${temp}℃、目的:${purposes.join('、')}に合う服を手持ちから選んで。不足分はキーワード2個を配列で。JSONのみ出力：{"selected_ids":[], "reason":"", "missing_item_keywords":["キーワード1", "キーワード2"]} 手持ち：${JSON.stringify(myClothes.map(c=>({id:c.id,name:c.name,category:c.category,minTemp:c.minTemp,maxTemp:c.maxTemp,purpose:c.purpose})))}`;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await response.json();
+            const aiResult = JSON.parse(data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
+            
+            renderAiSuggestion(aiResult, userObj.gender);
+        } catch (error) { alert("エラー"); } 
+        finally { showLoading(false); }
+    };
+
+    async function renderAiSuggestion(aiResult, gender) {
+        const container = document.getElementById("result-container");
+        const reasonBox = document.getElementById("reason-box");
+        const shoppingBox = document.getElementById("shopping-box");
+        const resultsContainer = document.getElementById("shopping-results");
+        container.innerHTML = "";
+        shoppingBox.style.display = "none";
+        resultsContainer.innerHTML = "";
+        
+        currentSuggestedIds = aiResult.selected_ids || [];
+
+        aiResult.selected_ids.forEach(id => {
+            const item = myClothes.find(c => c.id === id);
+            if (item) {
+                container.insertAdjacentHTML('beforeend', `<div class="clothing-item"><img src="${item.image}" class="item-image"><div class="item-info"><strong>${item.name}</strong></div></div>`);
+            }
+        });
+        reasonBox.innerHTML = aiResult.reason;
+        reasonBox.style.display = "block";
+        
+        if(currentSuggestedIds.length > 0) {
+            document.getElementById('save-outfit-btn').style.display = "block";
+        }
+        
+        if (aiResult.missing_item_keywords && aiResult.missing_item_keywords.length > 0) {
+            document.getElementById("shopping-message").innerHTML = `こちらのアイテムを合わせるのがおすすめです！`;
+            shoppingBox.style.display = "block";
+            for (const keyword of aiResult.missing_item_keywords) {
+                await fetchRakutenItems(keyword, gender);
+            }
+        }
+    }
+
+    window.saveFavoriteOutfit = async function() {
+        if (currentSuggestedIds.length === 0) return;
+        const outfitName = prompt("このコーデに名前を付けてください（例: 春のピクニックコーデ）");
+        if (!outfitName) return; 
+        
+        const currentUser = document.getElementById('current-user').value;
+        showLoading(true, "お気に入りを保存中...");
+        
+        try {
+            await addDoc(collection(db, "outfits"), {
+                name: outfitName,
+                items: currentSuggestedIds,
+                owner: currentUser,
+                createdAt: Date.now()
+            });
+            alert("お気に入りに保存しました！");
+            await loadData(); 
+        } catch (e) {
+            alert("エラー: " + e.message);
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    window.renderOutfits = function(outfits) {
+        const container = document.getElementById("favorites-container");
+        container.innerHTML = "";
+        
+        if (outfits.length === 0) {
+            container.innerHTML = '<p style="font-size: 12px; color: #999; text-align: center;">保存されたコーデはありません</p>';
+            return;
+        }
+
+        outfits.forEach(outfit => {
+            let imagesHtml = outfit.items.map(itemId => {
+                const item = myClothes.find(c => c.id === itemId);
+                return item ? `<img src="${item.image}" class="outfit-img-thumb">` : '';
+            }).join('');
+
+            container.insertAdjacentHTML('beforeend', `
+                <div class="outfit-row">
+                    <div>
+                        <div style="font-weight:bold; font-size:13px; color:#333;">${outfit.name}</div>
+                        <div class="outfit-images">${imagesHtml}</div>
+                    </div>
+                    <button class="delete-btn" style="width:auto; padding:8px 12px;" onclick="deleteOutfit('${outfit.id}')">削除</button>
+                </div>
+            `);
+        });
+    };
+
+    window.deleteOutfit = async function(id) {
+        if (!confirm("このお気に入りコーデを削除しますか？")) return;
+        await deleteDoc(doc(db, "outfits", id));
+        await loadData();
+    };
+
+    async function fetchRakutenItems(keyword, gender) {
+        const resultsContainer = document.getElementById("shopping-results");
+        const genreId = (gender === 'male') ? '551177' : '100371';
+        try {
+            const url = `https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260401?format=json&keyword=${encodeURIComponent(keyword)}&applicationId=${RAKUTEN_APP_ID}&accessKey=${RAKUTEN_ACCESS_KEY}&hits=2&imageFlag=1&genreId=${genreId}&sort=-reviewCount`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.Items) {
+                data.Items.forEach(item => {
+                    const i = item.Item;
+                    resultsContainer.insertAdjacentHTML('beforeend', `
+                        <div class="clothing-item">
+                            <a href="${i.itemUrl}" target="_blank" style="text-decoration: none;">
+                                <img src="${i.mediumImageUrls[0].imageUrl}" class="item-image">
+                                <div class="item-info">
+                                    <div style="font-weight:bold; color:#79D1C3; font-size:10px;">🔎 ${keyword}</div>
+                                    <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#333;">${i.itemName}</div>
+                                    <div class="item-price">¥${i.itemPrice.toLocaleString()}</div>
+                                </div>
+                            </a>
+                        </div>
+                    `);
+                });
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    window.deleteClothes = async function(id) {
+        if (confirm("削除？")) { await deleteDoc(doc(db, "clothes", id)); loadData(); }
+    };
+    window.renderInventory = function(items) {
+        const container = document.getElementById("inventory-container");
+        container.innerHTML = "";
+        items.forEach(item => {
+            container.insertAdjacentHTML('beforeend', `<div class="clothing-item"><img src="${item.image}" class="item-image"><div class="item-info"><strong>${item.name}</strong></div><div style="display:flex; justify-content:space-between; margin-top:5px;"><button class="edit-btn" onclick="startEdit('${item.id}')">編集</button><button class="delete-btn" onclick="deleteClothes('${item.id}')">削除</button></div></div>`);
+        });
+    };
+    function showLoading(show, text="") { 
+        document.getElementById('loading').style.display = show ? 'flex' : 'none'; 
+        if (text) document.getElementById('loading-text').innerHTML = text;
+    }
+    
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById('suggest-btn').addEventListener('click', window.suggestOutfit);
+    });
+
+    initUsers();
+</script>
+</body>
+</html>
